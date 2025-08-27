@@ -20,7 +20,7 @@
     "start:http": "node dist/cli.js",
     "dev": "cross-env NODE_ENV=development tsup --watch",
     "dev:cli": "cross-env NODE_ENV=development tsup --watch -- --stdio",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\"",
     "inspect": "pnpx @modelcontextprotocol/inspector",
     "prepack": "pnpm build",

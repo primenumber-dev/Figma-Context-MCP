@@ -43,13 +43,13 @@ export async function fetchWithRetry<T>(url: string, options: RequestOptions = {
     // -S: Show errors in stderr
     // --fail-with-body: curl errors with code 22, and outputs body of failed request, e.g. "Fetch failed with status 404"
     // -L: Follow redirects
-    const curlArgs = ['curl', '-s', '-S', '--fail-with-body', '-L', ...curlHeaders, url];
+    const curlArgs = ["curl", "-s", "-S", "--fail-with-body", "-L", ...curlHeaders, url];
     const curlCommand = shellEscape(curlArgs);
 
     try {
       // Additional validation of the constructed command
       validateCurlCommand(curlCommand);
-      
+
       // Fallback to curl for  corporate networks that have proxies that sometimes block fetch
       Logger.log(`[fetchWithRetry] Executing curl command: ${curlCommand}`);
       const { stdout, stderr } = await execAsync(curlCommand);
@@ -96,5 +96,5 @@ function formatHeadersForCurl(headers: Record<string, string> | undefined): stri
 
   // Headers are now properly escaped by shell-escape, so we return them as separate arguments
   // This prevents injection through header values
-  return Object.entries(headers).flatMap(([key, value]) => ['-H', `${key}: ${value}`]);
+  return Object.entries(headers).flatMap(([key, value]) => ["-H", `${key}: ${value}`]);
 }
