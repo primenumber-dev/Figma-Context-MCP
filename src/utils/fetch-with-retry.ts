@@ -1,6 +1,8 @@
 import { exec } from "child_process";
 import { promisify } from "util";
+import shellEscape from "shell-escape";
 import { Logger } from "./logger.js";
+import { validateUrl, validateHeaders, validateCurlCommand } from "./security-validation.js";
 
 const execAsync = promisify(exec);
 
@@ -26,15 +28,28 @@ export async function fetchWithRetry<T>(url: string, options: RequestOptions = {
       `[fetchWithRetry] Initial fetch failed for ${url}: ${fetchError.message}. Likely a corporate proxy or SSL issue. Attempting curl fallback.`,
     );
 
+    // Validate inputs for security before constructing curl command
+    try {
+      validateUrl(url);
+      validateHeaders(options.headers);
+    } catch (validationError: any) {
+      Logger.error(`[fetchWithRetry] Security validation failed: ${validationError.message}`);
+      throw new Error(`Security validation failed: ${validationError.message}`);
+    }
+
     const curlHeaders = formatHeadersForCurl(options.headers);
     // Most options here are to ensure stderr only contains errors, so we can use it to confidently check if an error occurred.
     // -s: Silent mode—no progress bar in stderr
     // -S: Show errors in stderr
     // --fail-with-body: curl errors with code 22, and outputs body of failed request, e.g. "Fetch failed with status 404"
     // -L: Follow redirects
-    const curlCommand = `curl -s -S --fail-with-body -L ${curlHeaders.join(" ")} "${url}"`;
+    const curlArgs = ["curl", "-s", "-S", "--fail-with-body", "-L", ...curlHeaders, url];
+    const curlCommand = shellEscape(curlArgs);
 
     try {
+      // Additional validation of the constructed command
+      validateCurlCommand(curlCommand);
+
       // Fallback to curl for  corporate networks that have proxies that sometimes block fetch
       Logger.log(`[fetchWithRetry] Executing curl command: ${curlCommand}`);
       const { stdout, stderr } = await execAsync(curlCommand);
@@ -79,5 +94,7 @@ function formatHeadersForCurl(headers: Record<string, string> | undefined): stri
     return [];
   }
 
-  return Object.entries(headers).map(([key, value]) => `-H "${key}: ${value}"`);
+  // Headers are now properly escaped by shell-escape, so we return them as separate arguments
+  // This prevents injection through header values
+  return Object.entries(headers).flatMap(([key, value]) => ["-H", `${key}: ${value}`]);
 }

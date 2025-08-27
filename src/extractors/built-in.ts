@@ -63,8 +63,9 @@ export const textExtractor: ExtractorFn = (node, result, context) => {
  */
 export const visualsExtractor: ExtractorFn = (node, result, context) => {
   // Check if node has children to determine CSS properties
-  const hasChildren = hasValue("children", node) && Array.isArray(node.children) && node.children.length > 0;
-  
+  const hasChildren =
+    hasValue("children", node) && Array.isArray(node.children) && node.children.length > 0;
+
   // fills
   if (hasValue("fills", node) && Array.isArray(node.fills) && node.fills.length) {
     const fills = node.fills.map((fill) => parsePaint(fill, hasChildren));
